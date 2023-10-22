@@ -1,0 +1,131 @@
+@page "/VistaCliente"
+@using AppEmpresa.Data;
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+<h1>Formulario de Clientes</h1>
+
+@if (getClienteError || iclientes is null)
+{
+    <p>Error cargando el contenido.</p>
+}
+else
+{
+    <form class="form-group">
+        <label for="lbl_id" class="form_label">ID</label>
+        <input @bind="var_idcliente" type="text" class="form-control" placeholder="ID" readonly>
+        <label for="lbl_nit" class="form_label">NIT</label>
+        <input @bind="var_nit" type="number" class="form-control" placeholder="1234567890">
+        <label for="lbl_nombres" class="form_label">Nombres</label>
+        <input @bind="var_nombres" type="text" class="form-control" placeholder="Nombre 1 Nombre 2">
+        <label for="lbl_apellidos" class="form_label">Apellidos</label>
+        <input @bind="var_apellidos" type="text" class="form-control" placeholder="Apellido 1 Apellido 2">
+        <label for="lbl_direccion" class="form_label">Direccion</label>
+        <input @bind="var_direccion" type="text" class="form-control" placeholder="Calle, Avenida, Zona, Ciudad...">
+        <label for="lbl_telefono" class="form_label">Telefono</label>
+        <input @bind="var_telefono" type="text" class="form-control" placeholder="12345678">
+        <label for="lbl_nacimiento" class="form_label">Fecha de Nacimiento</label>
+        <input @bind="var_nacimiento" type="date" class="form-control" placeholder="01/01/2000">
+        <br>
+        <button @onclick="Crear" type="button" class="btn btn-info">Crear</button>
+        <button @onclick="Modificar" type="button" class="btn btn-info">Modificar</button>
+        <button @onclick="Eliminar" type="button" class="btn btn-info">Eliminar</button>
+    </form>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th></th>
+                <th>NIT</th>
+                <th>Nombres</th>
+                <th>Apellidos</th>
+                <th>Direccion</th>
+                <th>Telefono</th>
+                <th>Fecha de Nacimiento</th>
+            </tr>
+        @foreach (var cliente in iclientes)
+        {
+            <tr>
+            <td><button type="button" @onclick="(() => cargarCampos(cliente.Id_cliente,cliente.Nit,cliente.Nombres,cliente.Apellidos,cliente.Direccion,cliente.Telefono,cliente.Fecha_nacimiento))" class="btn ybtn-light"><i class="oi oi-pencil"></i></button></td>
+            <td>@cliente.Nit</td>
+            <td>@cliente.Nombres</td>
+            <td>@cliente.Apellidos</td>
+            <td>@cliente.Direccion</td>
+            <td>@cliente.Telefono</td>
+            <td>@cliente.Fecha_nacimiento</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private String? url="https://localhost:7281/api/Clientes";
+    private Int32? var_idcliente, var_nit;
+    private String? var_nombres, var_apellidos, var_direccion, var_telefono;
+    private DateTime? var_nacimiento;
+    private IEnumerable<Clientes>? iclientes = Array.Empty<Clientes>();
+    private bool getClienteError;
+    private bool shouldRender;
+
+    protected override bool ShouldRender() => shouldRender;
+
+//Cargar Boton
+void cargarCampos(Int32? id, Int32? nit, String? nom, String? ape, String? dir, String? tel, DateTime? fn){
+    var_idcliente=id;
+    var_nit=nit;
+    var_nombres=nom;
+    var_apellidos=ape;
+    var_direccion=dir;
+    var_telefono=tel;
+    var_nacimiento=fn;
+}
+//CRUD
+//CREAR
+private async Task Crear()
+{
+    var client=ClientFactory.CreateClient();
+    var addItem = new Clientes{Id_cliente=var_idcliente, Nit=var_nit, Nombres=var_nombres, Apellidos=var_apellidos, Direccion=var_direccion, Telefono=var_telefono, Fecha_nacimiento=var_nacimiento};
+    await client.PostAsJsonAsync(url,addItem);
+    await OnInitializedAsync();
+}
+//MODIFICAR
+private async Task Modificar()
+{
+    var client=ClientFactory.CreateClient();
+    var addItem = new Clientes{Id_cliente=var_idcliente, Nit=var_nit, Nombres=var_nombres, Apellidos=var_apellidos, Direccion=var_direccion, Telefono=var_telefono, Fecha_nacimiento=var_nacimiento};
+    await client.PutAsJsonAsync($"{url}/{var_idcliente}",addItem);
+    await OnInitializedAsync();
+}
+//ELIMINAR
+private async Task Eliminar()
+{
+    var client=ClientFactory.CreateClient();
+    var addItem = new Clientes{Id_cliente=var_idcliente, Nit=var_nit, Nombres=var_nombres, Apellidos=var_apellidos, Direccion=var_direccion, Telefono=var_telefono, Fecha_nacimiento=var_nacimiento};
+    await client.DeleteAsync($"{url}/{var_idcliente}");
+    await OnInitializedAsync();
+}
+//LEER
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get,url);
+        request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+        var client = ClientFactory.CreateClient();
+
+        var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            using var responseStream = await response.Content.ReadAsStreamAsync();
+            iclientes = await JsonSerializer.DeserializeAsync
+                <IEnumerable<Clientes>>(responseStream);
+        }
+        else
+        {
+            getClienteError = true;
+        }
+        shouldRender = true;
+    }
+}
